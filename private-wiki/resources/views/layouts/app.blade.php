@@ -23,5 +23,11 @@
         @yield('content')
     </div>
 
+    {{-- フローティングボタン --}}
+    <a href="{{ route('notes.create') }}" 
+        class="fixed bottom-6 right-6 bg-blue-600 hover:bg-blue-700 text-white w-16 h-16 flex items-center justify-center rounded-full shadow-lg text-2xl z-50">
+        +
+    </a>
+
 </body>
 </html>

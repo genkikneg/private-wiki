@@ -45,4 +45,18 @@ class NoteController extends Controller
 
         return view('home', compact('notes'));
     }
+
+    public function show($id)
+    {
+        $note = Note::findOrFail($id);
+
+        $converter = new CommonMarkConverter();
+        $note->body = $converter->convertToHtml($note->body);
+
+        return view('notes', compact('note'));
+    }
+    public function create()
+    {
+        return view('notes.create');
+    }
 }
