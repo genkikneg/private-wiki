@@ -16,7 +16,7 @@
             最終更新: {{ \Carbon\Carbon::parse($note->updated_at)->format('Y/m/d H:i') }}
         </span>
     </div>
-    <div class="bg-white p-4 rounded shadow">
+    <div class="bg-white p-4 rounded shadow prose prose-slate max-w-none">
         {!! $note->body !!}
     </div>
 @endsection
