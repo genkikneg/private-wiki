@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 use App\Models\Note;
+use App\Models\Tag;
 use Illuminate\Http\Request;
 use League\CommonMark\CommonMarkConverter;
 
@@ -58,5 +59,35 @@ class NoteController extends Controller
     public function create()
     {
         return view('notes.create');
+    }
+
+    public function store(Request $request)
+    {
+        $request->validate([
+            'title' => 'required|string|max:255',
+            'body' => 'required|string',
+        ]);
+
+        $note = Note::create([
+            'title' => $request->title,
+            'body' => $request->body,
+        ]);
+
+        // タグの処理
+        if ($request->filled('tags')) {
+            $tagNames = array_map('trim', explode(',', $request->tags));
+            $tags = [];
+            
+            foreach ($tagNames as $tagName) {
+                if (!empty($tagName)) {
+                    $tag = Tag::firstOrCreate(['name' => $tagName]);
+                    $tags[] = $tag->id;
+                }
+            }
+            
+            $note->tags()->sync($tags);
+        }
+
+        return redirect()->route('notes.show', $note->id)->with('success', 'ノートが作成されました。');
     }
 }

@@ -27,4 +27,19 @@
         {{-- 保存ボタン --}}
         <button type="submit" class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700">保存</button>
     </form>
+
+    <script>
+        // タイトルとタグのinputでエンターキー押下時のフォーム送信を阻止
+        document.getElementById('title').addEventListener('keydown', function(e) {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+            }
+        });
+
+        document.getElementById('tags').addEventListener('keydown', function(e) {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+            }
+        });
+    </script>
 @endsection
