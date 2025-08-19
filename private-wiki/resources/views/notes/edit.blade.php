@@ -12,8 +12,9 @@
         @method('PUT')
         {{-- タイトル入力 --}}
         <div class="mb-4">
-            <label for="title" class="block text-gray-700 font-bold mb-2">タイトル</label>
-            <input type="text" name="title" id="title" value="{{ old('title', $note->title) }}" class="w-full border-gray-300 rounded px-4 py-2 @error('title') border-red-500 @enderror" placeholder="タイトルを入力してください">
+            <label for="title" class="block text-gray-700 font-bold mb-2">タイトル<span class="text-red-500 ml-1">*</span></label>
+            <input type="text" name="title" id="title" value="{{ old('title', $note->title) }}" maxlength="255" class="w-full border-gray-300 rounded px-4 py-2 @error('title') border-red-500 @enderror" placeholder="タイトルを入力してください" required>
+            <div class="text-sm text-gray-500 mt-1">最大255文字</div>
             @error('title')
                 <p class="text-red-500 text-sm mt-1">{{ $message }}</p>
             @enderror
@@ -22,7 +23,8 @@
         {{-- タグ入力 --}}
         <div class="mb-4">
             <label for="tags" class="block text-gray-700 font-bold mb-2">タグ</label>
-            <input type="text" name="tags" id="tags" value="{{ old('tags', $tagNames) }}" class="w-full border-gray-300 rounded px-4 py-2 @error('tags') border-red-500 @enderror" placeholder="タグをカンマ区切りで入力してください">
+            <input type="text" name="tags" id="tags" value="{{ old('tags', $tagNames) }}" maxlength="1000" class="w-full border-gray-300 rounded px-4 py-2 @error('tags') border-red-500 @enderror" placeholder="タグをカンマ区切りで入力してください">
+            <div class="text-sm text-gray-500 mt-1">各タグは50文字以内、最大20個まで。文字、数字、アンダースコア、ハイフンが使用可能。</div>
             @error('tags')
                 <p class="text-red-500 text-sm mt-1">{{ $message }}</p>
             @enderror
@@ -30,8 +32,9 @@
 
         {{-- ボディ入力 --}}
         <div class="mb-4">
-            <label for="body" class="block text-gray-700 font-bold mb-2">内容</label>
-            <textarea name="body" id="body" rows="10" class="w-full border-gray-300 rounded px-4 py-2 @error('body') border-red-500 @enderror" placeholder="内容を入力してください">{{ old('body', $note->body) }}</textarea>
+            <label for="body" class="block text-gray-700 font-bold mb-2">内容<span class="text-red-500 ml-1">*</span></label>
+            <textarea name="body" id="body" rows="10" maxlength="65535" class="w-full border-gray-300 rounded px-4 py-2 @error('body') border-red-500 @enderror" placeholder="内容を入力してください（Markdown記法が使用できます）" required>{{ old('body', $note->body) }}</textarea>
+            <div class="text-sm text-gray-500 mt-1">最大65535文字。Markdown記法が使用できます。</div>
             @error('body')
                 <p class="text-red-500 text-sm mt-1">{{ $message }}</p>
             @enderror
