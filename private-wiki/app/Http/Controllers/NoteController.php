@@ -1,6 +1,7 @@
 <?php
 
 namespace App\Http\Controllers;
+
 use App\Models\Note;
 use App\Models\Tag;
 use Illuminate\Http\Request;
@@ -14,7 +15,7 @@ class NoteController extends Controller
 
         // タイトル検索
         if ($request->filled('title')) {
-            $query->where('title', 'like', '%' . $request->title . '%');
+            $query->where('title', 'like', '%'.$request->title.'%');
         }
 
         // タグ検索
@@ -49,13 +50,18 @@ class NoteController extends Controller
 
     public function show($id)
     {
-        $note = Note::findOrFail($id);
+        try {
+            $note = Note::findOrFail($id);
+        } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
+            return redirect('/')->with('error', '指定されたノートが見つかりません。');
+        }
 
-        $converter = new CommonMarkConverter();
+        $converter = new CommonMarkConverter;
         $note->body = $converter->convertToHtml($note->body);
 
         return view('notes', compact('note'));
     }
+
     public function create()
     {
         return view('notes.create');
@@ -66,6 +72,10 @@ class NoteController extends Controller
         $request->validate([
             'title' => 'required|string|max:255',
             'body' => 'required|string',
+        ], [
+            'title.required' => 'タイトルは必須です。',
+            'title.max' => 'タイトルは255文字以内で入力してください。',
+            'body.required' => '内容は必須です。',
         ]);
 
         $note = Note::create([
@@ -77,14 +87,14 @@ class NoteController extends Controller
         if ($request->filled('tags')) {
             $tagNames = array_map('trim', explode(',', $request->tags));
             $tags = [];
-            
+
             foreach ($tagNames as $tagName) {
-                if (!empty($tagName)) {
+                if (! empty($tagName)) {
                     $tag = Tag::firstOrCreate(['name' => $tagName]);
                     $tags[] = $tag->id;
                 }
             }
-            
+
             $note->tags()->sync($tags);
         }
 
@@ -93,9 +103,13 @@ class NoteController extends Controller
 
     public function edit($id)
     {
-        $note = Note::findOrFail($id);
+        try {
+            $note = Note::findOrFail($id);
+        } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
+            return redirect('/')->with('error', '指定されたノートが見つかりません。');
+        }
         $tagNames = $note->tags->pluck('name')->implode(', ');
-        
+
         return view('notes.edit', compact('note', 'tagNames'));
     }
 
@@ -104,10 +118,18 @@ class NoteController extends Controller
         $request->validate([
             'title' => 'required|string|max:255',
             'body' => 'required|string',
+        ], [
+            'title.required' => 'タイトルは必須です。',
+            'title.max' => 'タイトルは255文字以内で入力してください。',
+            'body.required' => '内容は必須です。',
         ]);
 
-        $note = Note::findOrFail($id);
-        
+        try {
+            $note = Note::findOrFail($id);
+        } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
+            return redirect('/')->with('error', '指定されたノートが見つかりません。');
+        }
+
         $note->update([
             'title' => $request->title,
             'body' => $request->body,
@@ -117,14 +139,14 @@ class NoteController extends Controller
         if ($request->filled('tags')) {
             $tagNames = array_map('trim', explode(',', $request->tags));
             $tags = [];
-            
+
             foreach ($tagNames as $tagName) {
-                if (!empty($tagName)) {
+                if (! empty($tagName)) {
                     $tag = Tag::firstOrCreate(['name' => $tagName]);
                     $tags[] = $tag->id;
                 }
             }
-            
+
             $note->tags()->sync($tags);
         } else {
             $note->tags()->detach();
@@ -135,7 +157,11 @@ class NoteController extends Controller
 
     public function destroy($id)
     {
-        $note = Note::findOrFail($id);
+        try {
+            $note = Note::findOrFail($id);
+        } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
+            return redirect('/')->with('error', '指定されたノートが見つかりません。');
+        }
         $note->tags()->detach();
         $note->delete();
 

@@ -5,6 +5,7 @@
     <title>@yield('title', 'My Wiki')</title>
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <link href="{{ asset('css/app.css') }}" rel="stylesheet">
+    <script defer src="https://unpkg.com/alpinejs@3.x.x/dist/cdn.min.js"></script>
 </head>
 <body class="bg-gray-100 text-gray-900">
 
@@ -20,6 +21,7 @@
 
     {{-- サイドバーの右側にメインコンテンツ（左余白 w-64分） --}}
     <div class="ml-64 min-h-screen px-8 py-6">
+        <x-alert />
         @yield('content')
     </div>
 
