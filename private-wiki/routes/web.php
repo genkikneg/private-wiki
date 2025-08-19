@@ -1,9 +1,8 @@
 <?php
 
-use Illuminate\Support\Facades\Route;
-
 use App\Http\Controllers\NoteController;
 use App\Http\Controllers\TagController;
+use Illuminate\Support\Facades\Route;
 
 Route::get('/', [NoteController::class, 'index']);
 Route::get('/notes/create', [NoteController::class, 'create'])->name('notes.create');

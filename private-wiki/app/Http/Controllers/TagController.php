@@ -14,7 +14,7 @@ class TagController extends Controller
 
         // クエリパラメータ "query" があれば部分一致で絞り込み
         if ($request->filled('query')) {
-            $query->where('name', 'like', '%' . $request->input('query') . '%');
+            $query->where('name', 'like', '%'.$request->input('query').'%');
         }
 
         // 最大10件まで返す
