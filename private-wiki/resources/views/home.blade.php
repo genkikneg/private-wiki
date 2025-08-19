@@ -120,15 +120,20 @@
     }
 
     tagInput.addEventListener('keydown', function (e) {
-        if (e.key === 'Enter') {
+        if (e.key === 'Enter' && !e.isComposing) {
             e.preventDefault();
             const value = tagInput.value.trim();
             if (!value) return;
 
             tags.push(value);  // タグを追加
-            tagInput.value = ''; // 入力欄をクリア
             tryCombineTags();  // 条件がそろえば結合
             renderTags();
+
+            // 入力欄を確実にクリア
+            setTimeout(() => {
+                tagInput.value = '';
+                tagInput.dispatchEvent(new Event('input'));
+            }, 0);
 
             // 検索候補をクリアして非表示にする
             tagSuggestions.innerHTML = '';
@@ -144,7 +149,12 @@
                 tags.push(tag);
                 tryCombineTags();
                 renderTags();
-                tagInput.value = '';
+                
+                // 入力欄を確実にクリア
+                setTimeout(() => {
+                    tagInput.value = '';
+                    tagInput.dispatchEvent(new Event('input'));
+                }, 0);
                 tagSuggestions.innerHTML = '';
                 tagSuggestions.classList.add('hidden');
             }

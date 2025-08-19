@@ -21,9 +21,9 @@
         </div>
 
         {{-- タグ入力 --}}
-        <div class="mb-4">
-            <label for="tags" class="block text-gray-700 font-bold mb-2">タグ</label>
-            <input type="text" name="tags" id="tags" value="{{ old('tags', $tagNames) }}" maxlength="1000" class="w-full border-gray-300 rounded px-4 py-2 @error('tags') border-red-500 @enderror" placeholder="タグをカンマ区切りで入力してください">
+        <div class="mb-4 relative">
+            <label for="tags-input" class="block text-gray-700 font-bold mb-2">タグ</label>
+            <x-tag-input name="tags" :value="old('tags', $tagNames)" placeholder="タグを入力してください（Enterで追加）" />
             <div class="text-sm text-gray-500 mt-1">各タグは50文字以内、最大20個まで。文字、数字、アンダースコア、ハイフンが使用可能。</div>
             @error('tags')
                 <p class="text-red-500 text-sm mt-1">{{ $message }}</p>
@@ -48,14 +48,8 @@
     </form>
 
     <script>
-        // タイトルとタグのinputでエンターキー押下時のフォーム送信を阻止
+        // タイトルのinputでエンターキー押下時のフォーム送信を阻止
         document.getElementById('title').addEventListener('keydown', function(e) {
-            if (e.key === 'Enter') {
-                e.preventDefault();
-            }
-        });
-
-        document.getElementById('tags').addEventListener('keydown', function(e) {
             if (e.key === 'Enter') {
                 e.preventDefault();
             }
