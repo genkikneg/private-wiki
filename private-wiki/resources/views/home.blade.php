@@ -57,8 +57,21 @@
             </a>
         @endforeach
     </div>
-    <div class="mt-6 flex justify-center">
-        {{ $notes->links() }}
+    <div class="mt-6">
+        {{-- 現在のページ数表示 --}}
+        @if($notes->hasPages())
+            <div class="text-center mb-4">
+                <span class="text-sm text-gray-600">
+                    ページ {{ $notes->currentPage() }} / {{ $notes->lastPage() }} 
+                    （全 {{ $notes->total() }} 件中 {{ $notes->firstItem() }}-{{ $notes->lastItem() }} 件を表示）
+                </span>
+            </div>
+        @endif
+        
+        {{-- ページネーションリンク --}}
+        <div class="flex justify-center">
+            {{ $notes->links() }}
+        </div>
     </div>
 
     <script>
