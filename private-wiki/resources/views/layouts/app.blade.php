@@ -17,6 +17,19 @@
             <a href="#" class="block hover:bg-gray-700 rounded px-2 py-1">メモ一覧</a>
             <a href="#" class="block hover:bg-gray-700 rounded px-2 py-1">設定</a>
         </nav>
+        
+        {{-- ユーザー情報とログアウト --}}
+        @auth
+        <div class="mt-auto pt-4 border-t border-gray-700">
+            <p class="text-sm text-gray-300 mb-2">{{ Auth::user()->name }}</p>
+            <form method="POST" action="{{ route('logout') }}" class="inline">
+                @csrf
+                <button type="submit" class="text-sm text-red-400 hover:text-red-300">
+                    ログアウト
+                </button>
+            </form>
+        </div>
+        @endauth
     </aside>
 
     {{-- サイドバーの右側にメインコンテンツ（左余白 w-64分） --}}
