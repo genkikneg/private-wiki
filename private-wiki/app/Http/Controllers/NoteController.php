@@ -70,12 +70,17 @@ class NoteController extends Controller
     public function store(Request $request)
     {
         $request->validate([
-            'title' => 'required|string|max:255',
-            'body' => 'required|string',
+            'title' => 'required|string|max:255|min:1',
+            'body' => 'required|string|min:1|max:65535',
+            'tags' => 'nullable|string|max:1000',
         ], [
             'title.required' => 'タイトルは必須です。',
+            'title.min' => 'タイトルは少なくとも1文字以上入力してください。',
             'title.max' => 'タイトルは255文字以内で入力してください。',
             'body.required' => '内容は必須です。',
+            'body.min' => '内容は少なくとも1文字以上入力してください。',
+            'body.max' => '内容は65535文字以内で入力してください。',
+            'tags.max' => 'タグは1000文字以内で入力してください。',
         ]);
 
         $note = Note::create([
@@ -87,12 +92,32 @@ class NoteController extends Controller
         if ($request->filled('tags')) {
             $tagNames = array_map('trim', explode(',', $request->tags));
             $tags = [];
+            $validTagNames = [];
 
             foreach ($tagNames as $tagName) {
                 if (! empty($tagName)) {
-                    $tag = Tag::firstOrCreate(['name' => $tagName]);
-                    $tags[] = $tag->id;
+                    // タグ名のバリデーション
+                    if (strlen($tagName) > 50) {
+                        return back()->withErrors(['tags' => '各タグは50文字以内で入力してください。'])->withInput();
+                    }
+
+                    if (! preg_match('/^[\p{L}\p{N}\p{M}_\-\s]+$/u', $tagName)) {
+                        return back()->withErrors(['tags' => 'タグには文字、数字、アンダースコア、ハイフンのみ使用できます。'])->withInput();
+                    }
+
+                    $validTagNames[] = $tagName;
                 }
+            }
+
+            // 重複チェック
+            $uniqueTagNames = array_unique($validTagNames);
+            if (count($uniqueTagNames) > 20) {
+                return back()->withErrors(['tags' => 'タグは20個以内で入力してください。'])->withInput();
+            }
+
+            foreach ($uniqueTagNames as $tagName) {
+                $tag = Tag::firstOrCreate(['name' => $tagName]);
+                $tags[] = $tag->id;
             }
 
             $note->tags()->sync($tags);
@@ -116,12 +141,17 @@ class NoteController extends Controller
     public function update(Request $request, $id)
     {
         $request->validate([
-            'title' => 'required|string|max:255',
-            'body' => 'required|string',
+            'title' => 'required|string|max:255|min:1',
+            'body' => 'required|string|min:1|max:65535',
+            'tags' => 'nullable|string|max:1000',
         ], [
             'title.required' => 'タイトルは必須です。',
+            'title.min' => 'タイトルは少なくとも1文字以上入力してください。',
             'title.max' => 'タイトルは255文字以内で入力してください。',
             'body.required' => '内容は必須です。',
+            'body.min' => '内容は少なくとも1文字以上入力してください。',
+            'body.max' => '内容は65535文字以内で入力してください。',
+            'tags.max' => 'タグは1000文字以内で入力してください。',
         ]);
 
         try {
@@ -139,12 +169,32 @@ class NoteController extends Controller
         if ($request->filled('tags')) {
             $tagNames = array_map('trim', explode(',', $request->tags));
             $tags = [];
+            $validTagNames = [];
 
             foreach ($tagNames as $tagName) {
                 if (! empty($tagName)) {
-                    $tag = Tag::firstOrCreate(['name' => $tagName]);
-                    $tags[] = $tag->id;
+                    // タグ名のバリデーション
+                    if (strlen($tagName) > 50) {
+                        return back()->withErrors(['tags' => '各タグは50文字以内で入力してください。'])->withInput();
+                    }
+
+                    if (! preg_match('/^[\p{L}\p{N}\p{M}_\-\s]+$/u', $tagName)) {
+                        return back()->withErrors(['tags' => 'タグには文字、数字、アンダースコア、ハイフンのみ使用できます。'])->withInput();
+                    }
+
+                    $validTagNames[] = $tagName;
                 }
+            }
+
+            // 重複チェック
+            $uniqueTagNames = array_unique($validTagNames);
+            if (count($uniqueTagNames) > 20) {
+                return back()->withErrors(['tags' => 'タグは20個以内で入力してください。'])->withInput();
+            }
+
+            foreach ($uniqueTagNames as $tagName) {
+                $tag = Tag::firstOrCreate(['name' => $tagName]);
+                $tags[] = $tag->id;
             }
 
             $note->tags()->sync($tags);
