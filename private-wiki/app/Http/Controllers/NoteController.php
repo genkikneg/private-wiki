@@ -90,4 +90,55 @@ class NoteController extends Controller
 
         return redirect()->route('notes.show', $note->id)->with('success', 'ノートが作成されました。');
     }
+
+    public function edit($id)
+    {
+        $note = Note::findOrFail($id);
+        $tagNames = $note->tags->pluck('name')->implode(', ');
+        
+        return view('notes.edit', compact('note', 'tagNames'));
+    }
+
+    public function update(Request $request, $id)
+    {
+        $request->validate([
+            'title' => 'required|string|max:255',
+            'body' => 'required|string',
+        ]);
+
+        $note = Note::findOrFail($id);
+        
+        $note->update([
+            'title' => $request->title,
+            'body' => $request->body,
+        ]);
+
+        // タグの処理
+        if ($request->filled('tags')) {
+            $tagNames = array_map('trim', explode(',', $request->tags));
+            $tags = [];
+            
+            foreach ($tagNames as $tagName) {
+                if (!empty($tagName)) {
+                    $tag = Tag::firstOrCreate(['name' => $tagName]);
+                    $tags[] = $tag->id;
+                }
+            }
+            
+            $note->tags()->sync($tags);
+        } else {
+            $note->tags()->detach();
+        }
+
+        return redirect()->route('notes.show', $note->id)->with('success', 'ノートが更新されました。');
+    }
+
+    public function destroy($id)
+    {
+        $note = Note::findOrFail($id);
+        $note->tags()->detach();
+        $note->delete();
+
+        return redirect('/')->with('success', 'ノートが削除されました。');
+    }
 }

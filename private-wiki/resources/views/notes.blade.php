@@ -19,4 +19,14 @@
     <div class="bg-white p-4 rounded shadow prose prose-slate max-w-none">
         {!! $note->body !!}
     </div>
+    
+    <div class="mt-4 flex gap-2">
+        <a href="{{ route('notes.edit', $note->id) }}" class="bg-yellow-500 text-white px-4 py-2 rounded hover:bg-yellow-600">編集</a>
+        <form action="{{ route('notes.destroy', $note->id) }}" method="POST" class="inline" onsubmit="return confirm('このノートを削除してもよろしいですか？')">
+            @csrf
+            @method('DELETE')
+            <button type="submit" class="bg-red-500 text-white px-4 py-2 rounded hover:bg-red-600">削除</button>
+        </form>
+        <a href="{{ url('/') }}" class="bg-gray-500 text-white px-4 py-2 rounded hover:bg-gray-600">戻る</a>
+    </div>
 @endsection
