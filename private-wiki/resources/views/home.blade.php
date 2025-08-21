@@ -3,7 +3,7 @@
 @section('title', 'ホーム')
 
 @section('content')
-    <form method="GET" action="/" class="mb-8 flex flex-col md:flex-row gap-4 items-center" id="search-form">
+    <form method="GET" action="/" class="mb-8 flex flex-col md:flex-row gap-4 items-start" id="search-form">
         <input
             type="text"
             name="title"
@@ -26,10 +26,20 @@
             </div>
             <ul id="tag-suggestions" class="absolute bg-white border w-full z-10 hidden"></ul>
             <input type="hidden" name="tag" id="tag-hidden">
+            <div class="mt-1 text-xs text-gray-500">
+                <button type="button" id="tag-help-toggle" class="text-blue-600 hover:text-blue-800 underline">
+                    タグ検索のヒント
+                </button>
+                <div id="tag-help-content" class="hidden mt-2 p-2 bg-gray-50 rounded text-xs">
+                    <div class="mb-1"><strong>OR検索:</strong> <code>tag1,tag2</code> → いずれかのタグを持つ記事</div>
+                    <div class="mb-1"><strong>AND検索:</strong> <code>tag1::tag2</code> → 両方のタグを持つ記事</div>
+                    <div><strong>複合検索:</strong> <code>tag1::tag2,tag3</code> → (tag1とtag2を両方持つ) または (tag3を持つ) 記事</div>
+                </div>
+            </div>
         </div>
         <button
             type="submit"
-            class="px-6 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition"
+            class="px-6 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition self-start md:mt-0"
         >
             検索
         </button>
@@ -197,6 +207,20 @@
 
                 tagSuggestions.classList.toggle('hidden', !hasSuggestions);
             });
+    });
+
+    // ヒント表示の切り替え
+    document.getElementById('tag-help-toggle').addEventListener('click', function() {
+        const helpContent = document.getElementById('tag-help-content');
+        const isHidden = helpContent.classList.contains('hidden');
+        
+        if (isHidden) {
+            helpContent.classList.remove('hidden');
+            this.textContent = 'ヒントを非表示';
+        } else {
+            helpContent.classList.add('hidden');
+            this.textContent = 'タグ検索のヒント';
+        }
     });
 
     // 初期値読み込み
