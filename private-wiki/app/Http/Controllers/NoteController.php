@@ -57,8 +57,11 @@ class NoteController extends Controller
             return redirect('/')->with('error', '指定されたノートが見つかりません。');
         }
 
-        $converter = new CommonMarkConverter;
-        $note->body = $converter->convertToHtml($note->body);
+        // 手動で改行を2つの改行（段落区切り）に変換してからMarkdownを処理
+        $bodyWithBreaks = str_replace("\n", "\n\n", $note->body);
+        
+        $converter = new CommonMarkConverter();
+        $note->body = $converter->convertToHtml($bodyWithBreaks);
 
         return view('notes', compact('note'));
     }
@@ -245,5 +248,17 @@ class NoteController extends Controller
         } else {
             return redirect()->route('notes.history', $note->id)->with('error', '指定されたバージョンが見つかりません。');
         }
+    }
+
+    public function convertMarkdown(Request $request)
+    {
+        $request->validate([
+            'markdown' => 'required|string|max:1000'
+        ]);
+
+        $converter = new CommonMarkConverter();
+        $html = $converter->convert($request->markdown)->getContent();
+
+        return response()->json(['html' => $html]);
     }
 }

@@ -24,4 +24,7 @@ Route::middleware('auth')->group(function () {
     
     // タグ候補API
     Route::get('/tags', [TagController::class, 'index']);
+    
+    // Markdown変換API
+    Route::post('/api/markdown', [NoteController::class, 'convertMarkdown']);
 });
