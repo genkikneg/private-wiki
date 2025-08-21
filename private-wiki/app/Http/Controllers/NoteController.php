@@ -44,7 +44,7 @@ class NoteController extends Controller
             });
         }
 
-        $notes = $query->orderBy('updated_at', 'desc')->paginate(10)->appends($request->all());
+        $notes = $query->orderBy('updated_at', 'desc')->paginate(30)->appends($request->all());
 
         return view('home', compact('notes'));
     }
@@ -227,7 +227,7 @@ class NoteController extends Controller
             return redirect('/')->with('error', '指定されたノートが見つかりません。');
         }
 
-        $histories = $note->histories()->with('note')->paginate(10);
+        $histories = $note->histories()->with('note')->paginate(30);
 
         return view('notes.history', compact('note', 'histories'));
     }
