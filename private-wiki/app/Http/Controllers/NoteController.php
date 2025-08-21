@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Note;
 use App\Models\Tag;
+use App\Models\NoteHistory;
 use Illuminate\Http\Request;
 use League\CommonMark\CommonMarkConverter;
 
@@ -216,5 +217,33 @@ class NoteController extends Controller
         $note->delete();
 
         return redirect('/')->with('success', 'ノートが削除されました。');
+    }
+
+    public function history($id)
+    {
+        try {
+            $note = Note::findOrFail($id);
+        } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
+            return redirect('/')->with('error', '指定されたノートが見つかりません。');
+        }
+
+        $histories = $note->histories()->with('note')->paginate(10);
+
+        return view('notes.history', compact('note', 'histories'));
+    }
+
+    public function restore($id, $version)
+    {
+        try {
+            $note = Note::findOrFail($id);
+        } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
+            return redirect('/')->with('error', '指定されたノートが見つかりません。');
+        }
+
+        if ($note->restoreVersion($version)) {
+            return redirect()->route('notes.show', $note->id)->with('success', 'バージョン ' . $version . ' に復元しました。');
+        } else {
+            return redirect()->route('notes.history', $note->id)->with('error', '指定されたバージョンが見つかりません。');
+        }
     }
 }

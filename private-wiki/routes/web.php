@@ -19,6 +19,8 @@ Route::middleware('auth')->group(function () {
     Route::get('/notes/{id}/edit', [NoteController::class, 'edit'])->name('notes.edit');
     Route::put('/notes/{id}', [NoteController::class, 'update'])->name('notes.update');
     Route::delete('/notes/{id}', [NoteController::class, 'destroy'])->name('notes.destroy');
+    Route::get('/notes/{id}/history', [NoteController::class, 'history'])->name('notes.history');
+    Route::post('/notes/{id}/restore/{version}', [NoteController::class, 'restore'])->name('notes.restore');
     
     // タグ候補API
     Route::get('/tags', [TagController::class, 'index']);

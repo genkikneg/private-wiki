@@ -22,6 +22,7 @@
     
     <div class="mt-4 flex gap-2">
         <a href="{{ route('notes.edit', $note->id) }}" class="bg-yellow-500 text-white px-4 py-2 rounded hover:bg-yellow-600 transition-colors duration-200">編集</a>
+        <a href="{{ route('notes.history', $note->id) }}" class="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600 transition-colors duration-200">履歴</a>
         
         <div x-data="{ showConfirm: false }">
             <button @click="showConfirm = true" class="bg-red-500 text-white px-4 py-2 rounded hover:bg-red-600 transition-colors duration-200">削除</button>
