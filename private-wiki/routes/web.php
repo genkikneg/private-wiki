@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\Auth\AuthController;
 use App\Http\Controllers\BugTimelineController;
+use App\Http\Controllers\FavoriteTagController;
 use App\Http\Controllers\NoteController;
 use App\Http\Controllers\TagController;
 use Illuminate\Support\Facades\Route;
@@ -25,6 +26,17 @@ Route::middleware('auth')->group(function () {
     
     // タグ候補API
     Route::get('/tags', [TagController::class, 'index']);
+    
+    // お気に入りタグAPI
+    Route::get('/api/favorite-tags', [FavoriteTagController::class, 'index']);
+    Route::post('/api/favorite-tags', [FavoriteTagController::class, 'store']);
+    Route::delete('/api/favorite-tags/{favoriteTag}', [FavoriteTagController::class, 'destroy']);
+    Route::put('/api/favorite-tags/reorder', [FavoriteTagController::class, 'reorder']);
+    
+    // お気に入りタグ管理
+    Route::get('/favorite-tags/manage', [FavoriteTagController::class, 'manage'])->name('favorite-tags.manage');
+    Route::post('/favorite-tags/manage/add', [FavoriteTagController::class, 'add'])->name('favorite-tags.add');
+    Route::delete('/favorite-tags/manage/{favoriteTag}', [FavoriteTagController::class, 'remove'])->name('favorite-tags.remove');
     
     // バグタイムライン
     Route::get('/bug-timeline', [BugTimelineController::class, 'index'])->name('bug-timeline.index');

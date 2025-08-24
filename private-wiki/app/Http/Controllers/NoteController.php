@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\FavoriteTag;
 use App\Models\Note;
 use App\Models\Tag;
 use App\Models\NoteHistory;
@@ -45,8 +46,9 @@ class NoteController extends Controller
         }
 
         $notes = $query->orderBy('updated_at', 'desc')->paginate(30)->appends($request->all());
+        $favoriteTags = FavoriteTag::with('tag')->ordered()->get();
 
-        return view('home', compact('notes'));
+        return view('home', compact('notes', 'favoriteTags'));
     }
 
     public function show($id)
