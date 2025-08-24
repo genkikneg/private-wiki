@@ -24,6 +24,7 @@
         <nav class="space-y-2">
             <a href="{{ url('/') }}" class="block hover:bg-gray-700 rounded px-2 py-1">ホーム</a>
             <a href="#" class="block hover:bg-gray-700 rounded px-2 py-1">メモ一覧</a>
+            <a href="{{ route('bug-timeline.index') }}" class="block hover:bg-gray-700 rounded px-2 py-1">🐛 バグタイムライン</a>
             <a href="#" class="block hover:bg-gray-700 rounded px-2 py-1">設定</a>
         </nav>
         
