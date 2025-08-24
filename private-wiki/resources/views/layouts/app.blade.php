@@ -11,8 +11,16 @@
 <body class="bg-gray-100 text-gray-900">
 
     {{-- 左固定サイドバー --}}
-    <aside class="w-64 h-screen fixed top-0 left-0 bg-gray-800 text-white px-4 py-6">
-        <h2 class="text-2xl font-bold mb-6">📚 Private Wiki</h2>
+    <aside id="sidebar" class="sidebar w-64 h-screen fixed top-0 left-0 bg-gray-800 text-white px-4 py-6">
+        <div class="flex justify-between items-center mb-6">
+            <h2 class="text-2xl font-bold">📚 Private Wiki</h2>
+            <button id="sidebar-toggle" 
+                    class="text-white hover:text-gray-300 p-1 rounded focus:outline-none focus:ring-2 focus:ring-gray-500"
+                    aria-label="サイドバーを折り畳む/展開する"
+                    title="サイドバーを折り畳む/展開する">
+                ☰
+            </button>
+        </div>
         <nav class="space-y-2">
             <a href="{{ url('/') }}" class="block hover:bg-gray-700 rounded px-2 py-1">ホーム</a>
             <a href="#" class="block hover:bg-gray-700 rounded px-2 py-1">メモ一覧</a>
@@ -34,7 +42,15 @@
     </aside>
 
     {{-- サイドバーの右側にメインコンテンツ（左余白 w-64分） --}}
-    <div class="ml-64 min-h-screen px-8 py-6">
+    <div id="main-content" class="main-content ml-64 min-h-screen px-8 py-6">
+        {{-- サイドバー折り畳み時のトグルボタン --}}
+        <button id="main-sidebar-toggle" 
+                class="fixed top-4 left-4 z-50 bg-gray-800 hover:bg-gray-700 text-white p-2 rounded shadow-lg hidden"
+                aria-label="サイドバーを展開する"
+                title="サイドバーを展開する">
+            ☰
+        </button>
+        
         <x-alert />
         @yield('content')
     </div>
@@ -45,5 +61,6 @@
         +
     </a>
 
+    @vite(['resources/js/app.js'])
 </body>
 </html>
