@@ -22,7 +22,7 @@ class Note extends Model
             $note->createHistory('updated');
         });
 
-        static::deleted(function ($note) {
+        static::deleting(function ($note) {
             $note->createHistory('deleted');
         });
     }
