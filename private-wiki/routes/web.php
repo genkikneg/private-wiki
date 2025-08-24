@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\Auth\AuthController;
+use App\Http\Controllers\BugTimelineController;
 use App\Http\Controllers\NoteController;
 use App\Http\Controllers\TagController;
 use Illuminate\Support\Facades\Route;
@@ -24,6 +25,12 @@ Route::middleware('auth')->group(function () {
     
     // タグ候補API
     Route::get('/tags', [TagController::class, 'index']);
+    
+    // バグタイムライン
+    Route::get('/bug-timeline', [BugTimelineController::class, 'index'])->name('bug-timeline.index');
+    Route::post('/bug-timeline', [BugTimelineController::class, 'store'])->name('bug-timeline.store');
+    Route::patch('/bug-timeline/{bugReport}/status', [BugTimelineController::class, 'updateStatus'])->name('bug-timeline.update-status');
+    Route::delete('/bug-timeline/{bugReport}', [BugTimelineController::class, 'destroy'])->name('bug-timeline.destroy');
     
     // Markdown変換API
     Route::post('/api/markdown', [NoteController::class, 'convertMarkdown']);
