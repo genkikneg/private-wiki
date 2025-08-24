@@ -23,10 +23,30 @@
         </div>
         <nav class="space-y-2">
             <a href="{{ url('/') }}" class="block hover:bg-gray-700 rounded px-2 py-1">ホーム</a>
-            <a href="#" class="block hover:bg-gray-700 rounded px-2 py-1">メモ一覧</a>
             <a href="{{ route('bug-timeline.index') }}" class="block hover:bg-gray-700 rounded px-2 py-1">🐛 バグタイムライン</a>
+            <a href="{{ route('favorite-tags.manage') }}" class="block hover:bg-gray-700 rounded px-2 py-1">⭐ タグ管理</a>
             <a href="#" class="block hover:bg-gray-700 rounded px-2 py-1">設定</a>
         </nav>
+        
+        {{-- お気に入りタグセクション --}}
+        <div class="mt-6 pt-4 border-t border-gray-700" id="favorite-tags-section">
+            <h3 class="text-sm font-semibold text-gray-300 mb-3">お気に入りタグ</h3>
+            <div id="sidebar-favorite-tags-list" class="space-y-1">
+                @if(isset($favoriteTags) && $favoriteTags->count() > 0)
+                    @foreach($favoriteTags as $favoriteTag)
+                        <button 
+                            class="block w-full text-left hover:bg-gray-700 rounded px-2 py-1 text-sm text-blue-200 hover:text-blue-100 favorite-tag-btn"
+                            data-tag="{{ $favoriteTag->tag->name }}"
+                            title="「{{ $favoriteTag->tag->name }}」で検索"
+                        >
+                            {{ $favoriteTag->tag->name }}
+                        </button>
+                    @endforeach
+                @else
+                    <p class="text-xs text-gray-400">お気に入りのタグがありません</p>
+                @endif
+            </div>
+        </div>
         
         {{-- ユーザー情報とログアウト --}}
         @auth

@@ -12,9 +12,10 @@ class TagController extends Controller
     {
         $query = Tag::query();
 
-        // クエリパラメータ "query" があれば部分一致で絞り込み
-        if ($request->filled('query')) {
-            $query->where('name', 'like', '%'.$request->input('query').'%');
+        // クエリパラメータ "query" または "search" があれば部分一致で絞り込み
+        $searchTerm = $request->input('query') ?? $request->input('search');
+        if ($searchTerm) {
+            $query->where('name', 'like', '%'.$searchTerm.'%');
         }
 
         // 最大10件まで返す
