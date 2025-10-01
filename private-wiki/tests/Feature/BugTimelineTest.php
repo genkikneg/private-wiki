@@ -97,6 +97,50 @@ class BugTimelineTest extends TestCase
     }
 
     /** @test */
+    public function it_can_update_bug_report_content()
+    {
+        $bugReport = BugReport::create([
+            'title' => 'Initial Title',
+            'description' => 'Initial description',
+            'status' => 'open',
+        ]);
+
+        $response = $this->patch("/bug-timeline/{$bugReport->id}", [
+            'title' => 'Updated Title',
+            'description' => 'Updated description',
+        ]);
+
+        $response->assertRedirect('/bug-timeline');
+        $response->assertSessionHas('success', 'バグレポートを更新しました。');
+
+        $this->assertDatabaseHas('bug_reports', [
+            'id' => $bugReport->id,
+            'title' => 'Updated Title',
+            'description' => 'Updated description',
+        ]);
+    }
+
+    /** @test */
+    public function it_validates_fields_when_updating_bug_report()
+    {
+        $bugReport = BugReport::create([
+            'title' => 'Initial Title',
+            'description' => 'Initial description',
+            'status' => 'open',
+        ]);
+
+        $response = $this->patch("/bug-timeline/{$bugReport->id}", []);
+
+        $response->assertSessionHasErrorsIn('updateBugReport', ['title', 'description']);
+
+        $this->assertDatabaseHas('bug_reports', [
+            'id' => $bugReport->id,
+            'title' => 'Initial Title',
+            'description' => 'Initial description',
+        ]);
+    }
+
+    /** @test */
     public function it_can_delete_bug_report()
     {
         $bugReport = BugReport::create([

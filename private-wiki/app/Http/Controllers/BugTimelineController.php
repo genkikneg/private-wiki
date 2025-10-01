@@ -33,6 +33,19 @@ class BugTimelineController extends Controller
             ->with('success', 'バグレポートを投稿しました。');
     }
 
+    public function update(Request $request, BugReport $bugReport): RedirectResponse
+    {
+        $validated = $this->validateWithBag('updateBugReport', $request, [
+            'title' => 'required|string|max:255',
+            'description' => 'required|string',
+        ]);
+
+        $bugReport->update($validated);
+
+        return redirect('/bug-timeline')
+            ->with('success', 'バグレポートを更新しました。');
+    }
+
     public function updateStatus(Request $request, BugReport $bugReport): RedirectResponse
     {
         $request->validate([
