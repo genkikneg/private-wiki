@@ -7,6 +7,7 @@ describe('Markdown file import', () => {
   let form;
   let markdownEditor;
   let originalFileReader;
+  const flushPromises = () => new Promise((resolve) => setTimeout(resolve, 0));
 
   beforeEach(() => {
     document.body.innerHTML = `
@@ -38,8 +39,8 @@ describe('Markdown file import', () => {
     jest.restoreAllMocks();
   });
 
-  test('loadMarkdown() populates editor lines and hidden input', () => {
-    markdownEditor.loadMarkdown('行1\n行2');
+  test('loadMarkdown() populates editor lines and hidden input', async () => {
+    await markdownEditor.loadMarkdown('行1\n行2');
 
     const lines = editorElement.querySelectorAll('.editor-line');
     expect(lines).toHaveLength(2);
@@ -48,7 +49,7 @@ describe('Markdown file import', () => {
     expect(hiddenInput.value).toBe('行1\n行2');
   });
 
-  test('auto-imports and sets title when file selection changes', () => {
+  test('auto-imports and sets title when file selection changes', async () => {
     const fileInput = document.getElementById('markdown-file');
     const titleInput = document.getElementById('title');
 
@@ -61,8 +62,9 @@ describe('Markdown file import', () => {
     global.FileReader = jest.fn().mockImplementation(() => ({
       onload: null,
       onerror: null,
-      readAsText(file) {
-        this.onload({ target: { result: '# 見出し\n本文' } });
+      async readAsText(file) {
+        await Promise.resolve();
+        await this.onload({ target: { result: '# 見出し\n本文' } });
       },
     }));
 
@@ -75,13 +77,14 @@ describe('Markdown file import', () => {
     });
 
     fileInput.dispatchEvent(new Event('change'));
+    await flushPromises();
 
     expect(hiddenInput.value).toBe('# 見出し\n本文');
     expect(titleInput.value).toBe('sample');
     expect(filesGetter).toHaveBeenCalled();
   });
 
-  test('shows error when selected file is not markdown', () => {
+  test('shows error when selected file is not markdown', async () => {
     const fileInput = document.getElementById('markdown-file');
     const errorLabel = document.getElementById('markdown-import-error');
 
@@ -98,12 +101,13 @@ describe('Markdown file import', () => {
     });
 
     fileInput.dispatchEvent(new Event('change'));
+    await flushPromises();
 
     expect(errorLabel.classList.contains('hidden')).toBe(false);
     expect(errorLabel.textContent).toContain('.md');
   });
 
-  test('handles missing title input gracefully', () => {
+  test('handles missing title input gracefully', async () => {
     const fileInput = document.getElementById('markdown-file');
 
     const mockFile = new File(['内容'], 'note.md', { type: 'text/markdown' });
@@ -114,8 +118,9 @@ describe('Markdown file import', () => {
     global.FileReader = jest.fn().mockImplementation(() => ({
       onload: null,
       onerror: null,
-      readAsText(file) {
-        this.onload({ target: { result: '内容' } });
+      async readAsText(file) {
+        await Promise.resolve();
+        await this.onload({ target: { result: '内容' } });
       },
     }));
 
@@ -127,6 +132,7 @@ describe('Markdown file import', () => {
     });
 
     fileInput.dispatchEvent(new Event('change'));
+    await flushPromises();
 
     expect(hiddenInput.value).toBe('内容');
   });

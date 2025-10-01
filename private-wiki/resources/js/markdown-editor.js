@@ -10,11 +10,13 @@ export class MarkdownEditor {
 
     this.currentLineElement = null;
     this.isConverting = false;
+    this.ready = Promise.resolve();
 
     this.handleKeydown = this.handleKeydown.bind(this);
     this.handleKeyup = this.handleKeyup.bind(this);
     this.handleInput = this.handleInput.bind(this);
     this.handleClick = this.handleClick.bind(this);
+    this.updateHoverTitle = this.updateHoverTitle.bind(this);
 
     this.init();
   }
@@ -31,26 +33,34 @@ export class MarkdownEditor {
       });
     }
 
-    this.ensureLineStructure();
-    this.updatePlaceholder();
-    this.updateHiddenInput();
+    const initialMarkdown = (this.hiddenInput.value || this.editor.textContent || '').replace(/\r\n/g, '\n').replace(/\r/g, '\n');
+    if (initialMarkdown.length > 0) {
+      this.ready = this.loadMarkdown(initialMarkdown);
+    } else {
+      this.ensureLineStructure();
+      this.updatePlaceholder();
+      this.updateHiddenInput();
+      this.ready = Promise.resolve();
+    }
   }
 
-  loadMarkdown(markdownText = '') {
+  async loadMarkdown(markdownText = '') {
     const normalized = markdownText.replace(/\r\n/g, '\n').replace(/\r/g, '\n');
     const lines = normalized.length > 0 ? normalized.split('\n') : [''];
 
     this.editor.innerHTML = '';
+    const createdLines = [];
     lines.forEach((line) => {
-      this.createLine(line);
+      const lineElement = this.createLine(line);
+      createdLines.push(lineElement);
     });
 
-    const firstLine = this.editor.querySelector('.editor-line');
-    this.currentLineElement = firstLine ?? null;
-
-    if (firstLine) {
-      this.convertLineToMarkdown(firstLine);
+    for (const lineElement of createdLines) {
+      // 逐次変換して描画タイミングのズレを防ぐ
+      await this.convertLineToHTML(lineElement);
     }
+
+    this.currentLineElement = null;
 
     this.updateHiddenInput();
     this.updatePlaceholder();
@@ -58,6 +68,9 @@ export class MarkdownEditor {
 
   handleKeydown(event) {
     if (event.key === 'Enter') {
+      if (event.isComposing || event.keyCode === 229) {
+        return;
+      }
       event.preventDefault();
       const currentLine = this.getCurrentLine();
       if (currentLine) {
@@ -79,23 +92,42 @@ export class MarkdownEditor {
     if (currentLine) {
       const currentText = currentLine.textContent || '';
       currentLine.setAttribute('data-markdown', currentText);
+      this.updateHoverTitle(currentLine, currentText);
     }
     this.updateHiddenInput();
   }
 
   handleClick(event) {
-    if (this.currentLineElement) {
+    const clickedLine = this.getLineFromEvent(event);
+    if (!clickedLine) {
+      if (this.currentLineElement) {
+        this.convertLineToHTML(this.currentLineElement);
+        this.currentLineElement = null;
+      }
+      return;
+    }
+
+    if (this.currentLineElement && this.currentLineElement !== clickedLine) {
       this.convertLineToHTML(this.currentLineElement);
     }
 
-    const clickedLine = this.getLineFromEvent(event);
-    if (clickedLine) {
-      this.convertLineToMarkdown(clickedLine);
-      this.currentLineElement = clickedLine;
-      setTimeout(() => {
+    const wasRendered = clickedLine.classList.contains('markdown-rendered');
+    this.convertLineToMarkdown(clickedLine);
+    this.currentLineElement = clickedLine;
+
+    setTimeout(() => {
+      const selection = window.getSelection();
+      const hasActiveSelection = Boolean(
+        selection &&
+          selection.rangeCount > 0 &&
+          !selection.isCollapsed &&
+          clickedLine.contains(selection.getRangeAt(0).commonAncestorContainer),
+      );
+
+      if (wasRendered && !hasActiveSelection) {
         this.setCursorToEnd(clickedLine);
-      }, 0);
-    }
+      }
+    }, 0);
   }
 
   ensureLineStructure() {
@@ -119,6 +151,7 @@ export class MarkdownEditor {
     line.classList.add('editor-line');
     line.setAttribute('contenteditable', 'true');
     line.setAttribute('data-markdown', text);
+    this.updateHoverTitle(line, text);
     line.textContent = text;
     this.editor.appendChild(line);
     return line;
@@ -210,25 +243,40 @@ export class MarkdownEditor {
       return;
     }
 
-    const markdown = (lineElement.textContent || '').trim();
-    if (!markdown) {
-      lineElement.setAttribute('data-markdown', '');
-      return;
-    }
+    const rawText = lineElement.textContent || '';
+    const markdown = rawText;
+    const trimmed = markdown.trim();
 
     this.isConverting = true;
     lineElement.setAttribute('data-markdown', markdown);
+    this.updateHoverTitle(lineElement, markdown);
 
     try {
-      if (this.isLineInCodeBlock(lineElement)) {
+      if (!trimmed) {
+        lineElement.removeAttribute('data-type');
+        lineElement.classList.remove('markdown-rendered');
+        lineElement.textContent = markdown;
         return;
       }
 
-      const html = this.simpleMarkdownToHTML(markdown);
-      if (html !== markdown) {
-        lineElement.innerHTML = html;
-        lineElement.classList.add('markdown-rendered');
+      if (this.isLineInCodeBlock(lineElement)) {
+        lineElement.removeAttribute('data-type');
+        lineElement.classList.remove('markdown-rendered');
+        lineElement.textContent = markdown;
+        return;
       }
+
+      const block = this.detectBlock(trimmed);
+      if (!block) {
+        lineElement.removeAttribute('data-type');
+        lineElement.classList.remove('markdown-rendered');
+        lineElement.textContent = markdown;
+        return;
+      }
+
+      lineElement.setAttribute('data-type', block.type);
+      lineElement.innerHTML = this.renderBlock(block);
+      lineElement.classList.add('markdown-rendered');
     } finally {
       this.isConverting = false;
     }
@@ -254,26 +302,129 @@ export class MarkdownEditor {
     return false;
   }
 
-  simpleMarkdownToHTML(markdown) {
-    return markdown
-      .replace(/^#### (.*$)/gm, '<span class="text-base font-bold">$1</span>')
-      .replace(/^### (.*$)/gm, '<span class="text-lg font-bold">$1</span>')
-      .replace(/^## (.*$)/gm, '<span class="text-xl font-bold">$1</span>')
-      .replace(/^# (.*$)/gm, '<span class="text-2xl font-bold">$1</span>')
-      .replace(/^> (.*$)/gm, '<div class="border-l-4 border-gray-300 pl-4 italic text-gray-600">$1</div>')
-      .replace(/^---$/gm, '<hr class="border-gray-300 my-2">')
-      .replace(/^\*\*\*$/gm, '<hr class="border-gray-300 my-2">')
-      .replace(/^- (.*$)/gm, '<span class="flex items-start"><span class="mr-2">•</span><span>$1</span></span>')
-      .replace(/^\* (.*$)/gm, '<span class="flex items-start"><span class="mr-2">•</span><span>$1</span></span>')
-      .replace(/^\+ (.*$)/gm, '<span class="flex items-start"><span class="mr-2">•</span><span>$1</span></span>')
-      .replace(/^(\d+)\. (.*$)/gm, '<span class="flex items-start"><span class="mr-2">$1.</span><span>$2</span></span>')
-      .replace(/^- \[ \] (.*$)/gm, '<span class="flex items-start"><span class="mr-2">☐</span><span>$1</span></span>')
-      .replace(/^- \[x\] (.*$)/gm, '<span class="flex items-start"><span class="mr-2">☑</span><span class="line-through">$1</span></span>')
-      .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
-      .replace(/\*(.*?)\*/g, '<em>$1</em>')
-      .replace(/`(.*?)`/g, '<code class="bg-gray-200 px-1 rounded">$1</code>')
-      .replace(/~~(.*?)~~/g, '<span class="line-through">$1</span>')
-      .replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2" class="text-blue-600 underline">$1</a>');
+  detectBlock(markdown) {
+    const trimmed = markdown.trim();
+    if (!trimmed) {
+      return null;
+    }
+
+    const headingMatch = trimmed.match(/^(#{1,4})\s+(.*)$/);
+    if (headingMatch) {
+      const level = headingMatch[1].length;
+      return {
+        type: `heading-${level}`,
+        level,
+        content: headingMatch[2],
+      };
+    }
+
+    if (/^(\*\*\*|---)$/.test(trimmed)) {
+      return { type: 'divider', content: '' };
+    }
+
+    const quoteMatch = trimmed.match(/^> ?(.*)$/);
+    if (quoteMatch) {
+      return { type: 'quote', content: quoteMatch[1] };
+    }
+
+    const todoMatch = trimmed.match(/^[*-] \[( |x|X)\] (.*)$/);
+    if (todoMatch) {
+      const checked = todoMatch[1].toLowerCase() === 'x';
+      return {
+        type: checked ? 'todo-checked' : 'todo-unchecked',
+        content: todoMatch[2],
+        checked,
+      };
+    }
+
+    const unorderedMatch = trimmed.match(/^[*+-] (.*)$/);
+    if (unorderedMatch) {
+      return { type: 'bullet-list-item', content: unorderedMatch[1] };
+    }
+
+    const orderedMatch = trimmed.match(/^(\d+)\. (.*)$/);
+    if (orderedMatch) {
+      return {
+        type: 'ordered-list-item',
+        content: orderedMatch[2],
+        order: orderedMatch[1],
+      };
+    }
+
+    return { type: 'paragraph', content: trimmed };
+  }
+
+  renderBlock(block) {
+    switch (block.type) {
+      case 'heading-1':
+      case 'heading-2':
+      case 'heading-3':
+      case 'heading-4':
+        return this.renderHeading(block.level, block.content);
+      case 'quote':
+        return `<blockquote class="border-l-4 border-gray-300 pl-4 italic text-gray-600">${this.renderInline(block.content)}</blockquote>`;
+      case 'divider':
+        return '<hr class="border-gray-300 my-2">';
+      case 'todo-unchecked':
+      case 'todo-checked':
+        return this.renderTodo(block);
+      case 'bullet-list-item':
+        return `<div class="flex items-start gap-2"><span class="select-none">•</span><span>${this.renderInline(block.content)}</span></div>`;
+      case 'ordered-list-item':
+        return `<div class="flex items-start gap-2"><span class="select-none">${this.escapeHtml(block.order)}.</span><span>${this.renderInline(block.content)}</span></div>`;
+      case 'paragraph':
+      default:
+        return `<p>${this.renderInline(block.content)}</p>`;
+    }
+  }
+
+  renderHeading(level = 1, content = '') {
+    const boundedLevel = Math.min(Math.max(level, 1), 4);
+    const classMap = {
+      1: 'text-2xl font-bold',
+      2: 'text-xl font-bold',
+      3: 'text-lg font-bold',
+      4: 'text-base font-bold',
+    };
+
+    return `<h${boundedLevel} class="${classMap[boundedLevel]}">${this.renderInline(content)}</h${boundedLevel}>`;
+  }
+
+  renderTodo(block) {
+    const checked = block.checked;
+    const checkbox = `<input type="checkbox" ${checked ? 'checked' : ''} disabled class="mt-1 h-4 w-4 rounded border-gray-300">`;
+    const textClass = checked ? 'line-through text-gray-500' : '';
+    return `<label class="flex items-start gap-2">${checkbox}<span class="${textClass}">${this.renderInline(block.content)}</span></label>`;
+  }
+
+  renderInline(text) {
+    if (!text) {
+      return '';
+    }
+
+    let result = this.escapeHtml(text);
+
+    result = result.replace(/\[([^\]]+)\]\(([^)]+)\)/g, (match, label, url) => {
+      return `<a href="${url}" class="text-blue-600 underline">${label}</a>`;
+    });
+
+    result = result.replace(/`([^`]+)`/g, (match, code) => `<code class="bg-gray-200 px-1 rounded">${code}</code>`);
+    result = result.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
+    result = result.replace(/__(.+?)__/g, '<strong>$1</strong>');
+    result = result.replace(/\*(.+?)\*/g, '<em>$1</em>');
+    result = result.replace(/_(.+?)_/g, '<em>$1</em>');
+    result = result.replace(/~~(.+?)~~/g, '<span class="line-through">$1</span>');
+
+    return result;
+  }
+
+  escapeHtml(value) {
+    return String(value ?? '')
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#39;');
   }
 
   convertLineToMarkdown(lineElement) {
@@ -286,11 +437,15 @@ export class MarkdownEditor {
       if (markdown) {
         lineElement.textContent = markdown;
         lineElement.setAttribute('data-markdown', markdown);
+        lineElement.removeAttribute('data-type');
         lineElement.classList.remove('markdown-rendered');
+        this.updateHoverTitle(lineElement, markdown);
       }
     } else {
       const currentText = lineElement.textContent || '';
       lineElement.setAttribute('data-markdown', currentText);
+      lineElement.removeAttribute('data-type');
+      this.updateHoverTitle(lineElement, currentText);
     }
   }
 
@@ -316,6 +471,19 @@ export class MarkdownEditor {
       this.editor.classList.add('empty');
     } else {
       this.editor.classList.remove('empty');
+    }
+  }
+
+  updateHoverTitle(lineElement, markdownText) {
+    if (!lineElement) {
+      return;
+    }
+
+    const raw = markdownText ?? lineElement.getAttribute('data-markdown') ?? '';
+    if (raw.trim().length > 0) {
+      lineElement.setAttribute('title', raw);
+    } else {
+      lineElement.removeAttribute('title');
     }
   }
 }
