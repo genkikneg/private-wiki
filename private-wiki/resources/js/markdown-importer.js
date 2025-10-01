@@ -48,9 +48,9 @@ export function setupMarkdownImport({
     clearError();
 
     const reader = new FileReader();
-    reader.onload = (event) => {
+    reader.onload = async (event) => {
       const content = (event.target?.result ?? '').toString();
-      markdownEditor.loadMarkdown(content);
+      await markdownEditor.loadMarkdown(content);
       updateFileName(fileName);
 
       if (titleInput && !titleInput.value.trim()) {
