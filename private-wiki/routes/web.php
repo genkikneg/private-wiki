@@ -41,6 +41,7 @@ Route::middleware('auth')->group(function () {
     // バグタイムライン
     Route::get('/bug-timeline', [BugTimelineController::class, 'index'])->name('bug-timeline.index');
     Route::post('/bug-timeline', [BugTimelineController::class, 'store'])->name('bug-timeline.store');
+    Route::patch('/bug-timeline/{bugReport}', [BugTimelineController::class, 'update'])->name('bug-timeline.update');
     Route::patch('/bug-timeline/{bugReport}/status', [BugTimelineController::class, 'updateStatus'])->name('bug-timeline.update-status');
     Route::delete('/bug-timeline/{bugReport}', [BugTimelineController::class, 'destroy'])->name('bug-timeline.destroy');
     
