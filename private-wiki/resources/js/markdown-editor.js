@@ -16,6 +16,7 @@ export class MarkdownEditor {
     this.handleKeyup = this.handleKeyup.bind(this);
     this.handleInput = this.handleInput.bind(this);
     this.handleClick = this.handleClick.bind(this);
+    this.handlePaste = this.handlePaste.bind(this);
     this.updateHoverTitle = this.updateHoverTitle.bind(this);
     this.handleFocus = this.handleFocus.bind(this);
     this.handleBlur = this.handleBlur.bind(this);
@@ -28,6 +29,7 @@ export class MarkdownEditor {
     this.editor.addEventListener('keyup', this.handleKeyup);
     this.editor.addEventListener('input', this.handleInput);
     this.editor.addEventListener('click', this.handleClick);
+    this.editor.addEventListener('paste', this.handlePaste);
     this.editor.addEventListener('focus', this.handleFocus);
     this.editor.addEventListener('blur', this.handleBlur);
 
@@ -131,6 +133,80 @@ export class MarkdownEditor {
     };
   }
 
+  getSelectionOffsets() {
+    const selection = window.getSelection();
+    if (!selection || selection.rangeCount === 0) {
+      return null;
+    }
+
+    const range = selection.getRangeAt(0);
+    const lines = Array.from(this.editor.querySelectorAll('.editor-line'));
+    if (lines.length === 0) {
+      return null;
+    }
+
+    const lineTexts = this.getEditorMarkdownLines(lines);
+    const start = this.calculateGlobalOffset(range.startContainer, range.startOffset, lines, lineTexts);
+    const end = this.calculateGlobalOffset(range.endContainer, range.endOffset, lines, lineTexts);
+
+    if (start === null || end === null) {
+      return null;
+    }
+
+    return { start, end, lineTexts };
+  }
+
+  calculateGlobalOffset(node, offset, lines, lineTexts) {
+    const lineElement = this.findLineElement(node);
+    if (!lineElement) {
+      return null;
+    }
+
+    const lineIndex = lines.indexOf(lineElement);
+    if (lineIndex === -1) {
+      return null;
+    }
+
+    const offsetWithinLine = this.calculateOffsetWithinLine(lineElement, node, offset);
+    let globalOffset = offsetWithinLine;
+
+    for (let i = 0; i < lineIndex; i += 1) {
+      globalOffset += lineTexts[i].length;
+      if (i < lineTexts.length - 1) {
+        globalOffset += 1;
+      }
+    }
+
+    return globalOffset;
+  }
+
+  findLineElement(node) {
+    let current = node;
+    while (current && current !== this.editor) {
+      if (current.nodeType === Node.ELEMENT_NODE && current.classList.contains('editor-line')) {
+        return current;
+      }
+      current = current.parentNode;
+    }
+    return null;
+  }
+
+  calculateOffsetWithinLine(lineElement, node, offset) {
+    const range = document.createRange();
+    range.selectNodeContents(lineElement);
+    try {
+      range.setEnd(node, offset);
+    } catch (error) {
+      range.setEnd(lineElement, lineElement.childNodes.length);
+    }
+    return range.toString().length;
+  }
+
+  getEditorMarkdownLines(lines = null) {
+    const targetLines = lines ?? Array.from(this.editor.querySelectorAll('.editor-line'));
+    return targetLines.map((line) => line.getAttribute('data-markdown') ?? line.textContent ?? '');
+  }
+
   handleClick(event) {
     const clickedLine = this.getLineFromEvent(event);
     if (!clickedLine) {
@@ -184,6 +260,41 @@ export class MarkdownEditor {
         this.setCursorToEnd(clickedLine);
       }
     }, 0);
+  }
+
+  async handlePaste(event) {
+    event.preventDefault();
+
+    const clipboardData = event.clipboardData || window.clipboardData;
+    const pastedText = clipboardData?.getData('text/plain') ?? '';
+
+    if (!pastedText) {
+      return;
+    }
+
+    const normalizedText = pastedText.replace(/\r\n/g, '\n').replace(/\r/g, '\n');
+    const selectionOffsets = this.getSelectionOffsets();
+
+    if (!selectionOffsets) {
+      this.insertPlainTextAtCursor(normalizedText);
+      this.updateHiddenInput();
+      this.updatePlaceholder();
+      return;
+    }
+
+    this.updateHiddenInput();
+    const currentMarkdown = selectionOffsets.lineTexts.join('\n');
+    const before = currentMarkdown.slice(0, selectionOffsets.start);
+    const after = currentMarkdown.slice(selectionOffsets.end);
+    const newMarkdown = before + normalizedText + after;
+    const newCaretOffset = selectionOffsets.start + normalizedText.length;
+
+    await this.loadMarkdown(newMarkdown);
+
+    this.setCursorByGlobalOffset(newCaretOffset);
+    this.updateHiddenInput();
+    this.updatePlaceholder();
+    this.setCursorByGlobalOffset(newCaretOffset);
   }
 
   ensureLineStructure() {
@@ -307,6 +418,60 @@ export class MarkdownEditor {
     const boundedOffset = Math.max(0, Math.min(offset, textNode.textContent.length));
     range.setStart(textNode, boundedOffset);
     range.collapse(true);
+    selection.removeAllRanges();
+    selection.addRange(range);
+  }
+
+  setCursorByGlobalOffset(globalOffset) {
+    const lines = Array.from(this.editor.querySelectorAll('.editor-line'));
+    if (lines.length === 0) {
+      return;
+    }
+
+    const lineTexts = this.getEditorMarkdownLines(lines);
+    const { lineIndex, offset } = this.calculateLinePositionFromGlobalOffset(globalOffset, lineTexts);
+    const targetLine = lines[lineIndex] ?? lines[lines.length - 1];
+
+    this.convertLineToMarkdown(targetLine);
+    this.currentLineElement = targetLine;
+    this.setCursorToOffset(targetLine, offset);
+  }
+
+  calculateLinePositionFromGlobalOffset(globalOffset, lineTexts) {
+    let remaining = globalOffset;
+
+    for (let i = 0; i < lineTexts.length; i += 1) {
+      const textLength = lineTexts[i].length;
+      if (remaining <= textLength) {
+        return { lineIndex: i, offset: remaining };
+      }
+
+      remaining -= textLength;
+      if (i < lineTexts.length - 1) {
+        remaining -= 1;
+      }
+    }
+
+    return {
+      lineIndex: lineTexts.length - 1,
+      offset: lineTexts[lineTexts.length - 1].length,
+    };
+  }
+
+  insertPlainTextAtCursor(text) {
+    const selection = window.getSelection();
+    if (!selection || selection.rangeCount === 0) {
+      return;
+    }
+
+    const range = selection.getRangeAt(0);
+    range.deleteContents();
+
+    const textNode = document.createTextNode(text);
+    range.insertNode(textNode);
+    range.setStartAfter(textNode);
+    range.collapse(true);
+
     selection.removeAllRanges();
     selection.addRange(range);
   }
