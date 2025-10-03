@@ -286,4 +286,38 @@ describe('MarkdownEditor の行変換', () => {
     expect(editor.classList.contains('empty')).toBe(true);
   });
 
+  test('ペーストしたMarkdownが即座にプレビューされる', async () => {
+    const { editor, markdownEditor } = setup();
+    const line = editor.querySelector('.editor-line');
+
+    const selection = window.getSelection();
+    const range = document.createRange();
+    range.selectNodeContents(line);
+    range.collapse(true);
+    selection.removeAllRanges();
+    selection.addRange(range);
+
+    const pasteEvent = new Event('paste', { bubbles: true });
+    pasteEvent.preventDefault = jest.fn();
+    pasteEvent.clipboardData = {
+      getData: jest.fn(() => '# 見出し\n- 箇条書き'),
+    };
+
+    line.dispatchEvent(pasteEvent);
+
+    await Promise.resolve();
+    await Promise.resolve();
+    await new Promise((resolve) => setTimeout(resolve, 0));
+
+    expect(pasteEvent.preventDefault).toHaveBeenCalled();
+    const lines = editor.querySelectorAll('.editor-line');
+    expect(lines).toHaveLength(2);
+    expect(lines[0].classList.contains('markdown-rendered')).toBe(true);
+    expect(lines[0].innerHTML).toContain('<h1');
+    expect(lines[1].getAttribute('data-markdown')).toBe('- 箇条書き');
+    expect(lines[1].classList.contains('markdown-rendered')).toBe(false);
+    expect(lines[1].textContent).toBe('- 箇条書き');
+    expect(document.getElementById('body').value).toBe('# 見出し\n- 箇条書き');
+  });
+
 });
