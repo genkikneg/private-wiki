@@ -17,6 +17,8 @@ export class MarkdownEditor {
     this.handleInput = this.handleInput.bind(this);
     this.handleClick = this.handleClick.bind(this);
     this.updateHoverTitle = this.updateHoverTitle.bind(this);
+    this.handleFocus = this.handleFocus.bind(this);
+    this.handleBlur = this.handleBlur.bind(this);
 
     this.init();
   }
@@ -26,6 +28,8 @@ export class MarkdownEditor {
     this.editor.addEventListener('keyup', this.handleKeyup);
     this.editor.addEventListener('input', this.handleInput);
     this.editor.addEventListener('click', this.handleClick);
+    this.editor.addEventListener('focus', this.handleFocus);
+    this.editor.addEventListener('blur', this.handleBlur);
 
     if (this.form) {
       this.form.addEventListener('submit', () => {
@@ -87,7 +91,6 @@ export class MarkdownEditor {
   }
 
   handleInput() {
-    this.updatePlaceholder();
     const currentLine = this.getCurrentLine();
     if (currentLine) {
       const currentText = currentLine.textContent || '';
@@ -95,6 +98,17 @@ export class MarkdownEditor {
       this.updateHoverTitle(currentLine, currentText);
     }
     this.updateHiddenInput();
+    this.updatePlaceholder();
+  }
+
+  handleFocus() {
+    this.editor.classList.add('is-focused');
+    this.updatePlaceholder();
+  }
+
+  handleBlur() {
+    this.editor.classList.remove('is-focused');
+    this.updatePlaceholder();
   }
 
   handleClick(event) {
