@@ -194,6 +194,39 @@ describe('MarkdownEditor の行変換', () => {
     }
   });
 
+  test('レンダリング済みの行をクリックしてもキャレット位置が維持される', async () => {
+    jest.useFakeTimers();
+
+    try {
+      const { editor, markdownEditor } = setup();
+      const line = editor.querySelector('.editor-line');
+      line.textContent = 'abcdef';
+
+      await markdownEditor.convertLineToHTML(line);
+
+      const targetNode = line.querySelector('p')?.firstChild ?? line.firstChild;
+      const selection = window.getSelection();
+      const range = document.createRange();
+      range.setStart(targetNode, 2);
+      range.collapse(true);
+      selection.removeAllRanges();
+      selection.addRange(range);
+
+      line.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+
+      jest.runOnlyPendingTimers();
+
+      const resultSelection = window.getSelection();
+      expect(resultSelection.rangeCount).toBe(1);
+      const caretRange = resultSelection.getRangeAt(0);
+      expect(caretRange.startContainer.nodeType).toBe(Node.TEXT_NODE);
+      expect(caretRange.startOffset).toBe(2);
+      expect(line.textContent).toBe('abcdef');
+    } finally {
+      jest.useRealTimers();
+    }
+  });
+
   test('既存のMarkdownを持つエディタは初期化時にHTMLプレビューが表示される', async () => {
     const { editor, markdownEditor } = setup({ initialBody: '# 見出し' });
 

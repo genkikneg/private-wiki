@@ -111,6 +111,26 @@ export class MarkdownEditor {
     this.updatePlaceholder();
   }
 
+  getCollapsedCaretInfo(lineElement) {
+    const selection = window.getSelection();
+    if (!selection || selection.rangeCount === 0) {
+      return null;
+    }
+
+    const range = selection.getRangeAt(0);
+    if (!range.collapsed || !lineElement.contains(range.startContainer)) {
+      return null;
+    }
+
+    const preCaretRange = range.cloneRange();
+    preCaretRange.selectNodeContents(lineElement);
+    preCaretRange.setEnd(range.startContainer, range.startOffset);
+
+    return {
+      offset: preCaretRange.toString().length,
+    };
+  }
+
   handleClick(event) {
     const clickedLine = this.getLineFromEvent(event);
     if (!clickedLine) {
@@ -126,10 +146,32 @@ export class MarkdownEditor {
     }
 
     const wasRendered = clickedLine.classList.contains('markdown-rendered');
+    const plainTextBeforeConvert = clickedLine.textContent || '';
+    let collapsedCaretInfo = null;
+
+    if (wasRendered) {
+      collapsedCaretInfo = this.getCollapsedCaretInfo(clickedLine);
+      if (collapsedCaretInfo) {
+        collapsedCaretInfo.markdown = clickedLine.getAttribute('data-markdown') || '';
+        collapsedCaretInfo.plainText = plainTextBeforeConvert;
+      }
+    }
+
     this.convertLineToMarkdown(clickedLine);
     this.currentLineElement = clickedLine;
 
     setTimeout(() => {
+      if (wasRendered && collapsedCaretInfo) {
+        const markdownAfterConvert = clickedLine.textContent || '';
+        if (
+          collapsedCaretInfo.plainText === collapsedCaretInfo.markdown &&
+          markdownAfterConvert === collapsedCaretInfo.markdown
+        ) {
+          this.setCursorToOffset(clickedLine, collapsedCaretInfo.offset);
+          return;
+        }
+      }
+
       const selection = window.getSelection();
       const hasActiveSelection = Boolean(
         selection &&
@@ -247,6 +289,23 @@ export class MarkdownEditor {
       range.setStart(element, 0);
     }
 
+    range.collapse(true);
+    selection.removeAllRanges();
+    selection.addRange(range);
+  }
+
+  setCursorToOffset(element, offset) {
+    const selection = window.getSelection();
+    const range = document.createRange();
+    const textNode = element.firstChild;
+
+    if (!selection || !textNode || textNode.nodeType !== Node.TEXT_NODE) {
+      this.setCursorToEnd(element);
+      return;
+    }
+
+    const boundedOffset = Math.max(0, Math.min(offset, textNode.textContent.length));
+    range.setStart(textNode, boundedOffset);
     range.collapse(true);
     selection.removeAllRanges();
     selection.addRange(range);
