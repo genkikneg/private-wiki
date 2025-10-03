@@ -3,6 +3,7 @@
 namespace Tests\Feature;
 
 use App\Models\FavoriteTag;
+use App\Models\Note;
 use App\Models\Tag;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -78,5 +79,26 @@ class SidebarTest extends TestCase
 
         $this->assertTrue($jsPosition < $pythonPosition);
         $this->assertTrue($pythonPosition < $phpPosition);
+    }
+
+    public function test_sidebar_displays_favorite_tags_on_note_show_page()
+    {
+        $user = User::factory()->create();
+        $this->actingAs($user);
+
+        $tag1 = Tag::factory()->create(['name' => 'Laravel']);
+        $tag2 = Tag::factory()->create(['name' => 'Vue.js']);
+
+        FavoriteTag::factory()->create(['tag_id' => $tag1->id, 'display_order' => 2]);
+        FavoriteTag::factory()->create(['tag_id' => $tag2->id, 'display_order' => 1]);
+
+        $note = Note::factory()->create();
+
+        $response = $this->get(route('notes.show', $note->id));
+
+        $response->assertStatus(200)
+            ->assertSee('お気に入りタグ')
+            ->assertSee('Vue.js')
+            ->assertSee('Laravel');
     }
 }
