@@ -58,7 +58,7 @@
     </form>
 
     <style>
-        #body-editor.empty:before {
+        #body-editor.empty:not(.is-focused):before {
             content: attr(data-placeholder);
             color: #9ca3af;
             pointer-events: none;

@@ -4,7 +4,7 @@ describe('MarkdownEditor の行変換', () => {
   const setup = ({ initialBody = '' } = {}) => {
     document.body.innerHTML = `
       <form>
-        <div id="body-editor"></div>
+        <div id="body-editor" data-placeholder="プレースホルダー"></div>
         <input type="hidden" id="body" value="">
       </form>
     `;
@@ -22,7 +22,7 @@ describe('MarkdownEditor の行変換', () => {
       form,
     });
 
-    return { editor, markdownEditor };
+    return { editor, hiddenInput, markdownEditor };
   };
 
   afterEach(() => {
@@ -204,6 +204,53 @@ describe('MarkdownEditor の行変換', () => {
     expect(line.classList.contains('markdown-rendered')).toBe(true);
     expect(line.innerHTML).toContain('<h1');
     expect(line.getAttribute('title')).toBe('# 見出し');
+  });
+
+  test('入力を全て削除するとプレースホルダーが再表示される', () => {
+    const { editor, hiddenInput } = setup();
+    const line = editor.querySelector('.editor-line');
+
+    expect(editor.classList.contains('empty')).toBe(true);
+
+    const setCaretToLine = () => {
+      const selection = window.getSelection();
+      const range = document.createRange();
+      range.selectNodeContents(line);
+      range.collapse(false);
+      selection.removeAllRanges();
+      selection.addRange(range);
+    };
+
+    line.textContent = 'サンプル';
+    setCaretToLine();
+    editor.dispatchEvent(new Event('input', { bubbles: true }));
+
+    expect(editor.classList.contains('empty')).toBe(false);
+    expect(hiddenInput.value).toBe('サンプル');
+
+    line.textContent = '';
+    setCaretToLine();
+    editor.dispatchEvent(new Event('input', { bubbles: true }));
+
+    expect(hiddenInput.value).toBe('');
+    expect(editor.classList.contains('empty')).toBe(true);
+  });
+
+  test('フォーカス時はプレースホルダーを隠すためのクラスが付与される', () => {
+    const { editor } = setup();
+
+    expect(editor.classList.contains('empty')).toBe(true);
+    expect(editor.classList.contains('is-focused')).toBe(false);
+
+    editor.dispatchEvent(new Event('focus'));
+
+    expect(editor.classList.contains('is-focused')).toBe(true);
+    expect(editor.classList.contains('empty')).toBe(true);
+
+    editor.dispatchEvent(new Event('blur'));
+
+    expect(editor.classList.contains('is-focused')).toBe(false);
+    expect(editor.classList.contains('empty')).toBe(true);
   });
 
 });
