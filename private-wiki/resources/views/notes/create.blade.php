@@ -32,9 +32,26 @@
         {{-- Markdownファイル読み込み --}}
         <div class="mb-6">
             <label class="block text-gray-700 font-bold mb-2" for="markdown-file">Markdownファイルから読み込み</label>
-            <input type="file" id="markdown-file" accept=".md,text/markdown" class="block w-full md:w-auto text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-600 hover:file:bg-blue-100">
-            <p id="markdown-file-name" class="text-sm text-gray-500 mt-1"></p>
-            <p id="markdown-import-error" class="text-sm text-red-500 hidden mt-1"></p>
+            <div class="flex flex-wrap items-center gap-3">
+                <button
+                    type="button"
+                    id="import-markdown"
+                    data-testid="markdown-file-trigger"
+                    class="inline-flex items-center gap-2 rounded border border-blue-200 bg-blue-50 px-4 py-2 text-sm font-semibold text-blue-600 transition-colors duration-200 hover:bg-blue-100 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
+                    aria-controls="markdown-file"
+                >
+                    ファイルを選択
+                </button>
+                <span id="markdown-file-name" class="text-sm text-gray-500"></span>
+            </div>
+            <input
+                type="file"
+                id="markdown-file"
+                data-testid="markdown-file-input"
+                accept=".md,text/markdown"
+                class="hidden"
+            >
+            <p id="markdown-import-error" class="text-sm text-red-500 hidden mt-2"></p>
             <p class="text-xs text-gray-500 mt-1">ファイルを選択すると自動的にエディタへ読み込まれます。データはサーバーへアップロードされません。</p>
         </div>
 
