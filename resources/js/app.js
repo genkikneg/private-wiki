@@ -5,8 +5,7 @@ import { FavoriteTagsManagement } from './favorite-tags-management.js';
 import { MarkdownEditor } from './markdown-editor.js';
 import { setupMarkdownImport } from './markdown-importer.js';
 
-// DOM読み込み完了後にコントローラーを初期化
-document.addEventListener('DOMContentLoaded', () => {
+const initializeApp = () => {
     new SidebarController();
     new FavoriteTagsController();
     
@@ -46,4 +45,10 @@ document.addEventListener('DOMContentLoaded', () => {
             });
         }
     }
-});
+};
+
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initializeApp);
+} else {
+    initializeApp();
+}
